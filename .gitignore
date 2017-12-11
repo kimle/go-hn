@@ -15,3 +15,6 @@
 
 .DS_Store
 .vscode
+
+# Project binary
+go-hackernews

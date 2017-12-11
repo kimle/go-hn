@@ -35,10 +35,11 @@ func init() {
 }
 
 func getIDs(n int) []int {
+	const topstoriesURL = "https://hacker-news.firebaseio.com/v0/topstories.json"
 	red := color.New(color.FgRed).Add(color.Bold)
 	allIds := make([]int, 500)
 	idList := make([]int, n)
-	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
+	resp, err := http.Get(topstoriesURL)
 	if err != nil {
 		red.Println(err)
 		os.Exit(1)
