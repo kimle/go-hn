@@ -89,13 +89,14 @@ func getTopStories(IDs []int) []Story {
 }
 
 func printStories(stories []Story) {
-	cyan := color.New(color.FgHiCyan).Add(color.Bold)
+	cyan := color.New(color.FgCyan).Add(color.Bold)
+	magenta := color.New(color.FgMagenta).Add(color.Bold)
 	yellow := color.New(color.FgYellow)
 	green := color.New(color.FgGreen).Add(color.Underline)
 	for i, story := range stories {
 		cyan.Printf("%d%s", i+1, ". ")
-		color.Magenta("%s [%d %s]", story.Title, story.Score, "points")
-		yellow.Printf("\t%d %s", story.Descendants, "comments")
+		magenta.Printf("%s [%d %s]\n", story.Title, story.Score, "points")
+		yellow.Printf("  %d %s", story.Descendants, "comments")
 		green.Printf("\t%s\n", story.URL)
 	}
 }
