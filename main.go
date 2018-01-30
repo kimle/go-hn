@@ -6,9 +6,11 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -24,6 +26,7 @@ type Story struct {
 }
 
 var flagvar int
+var wg sync.WaitGroup
 
 func init() {
 	flag.IntVar(&flagvar, "stories", 0, "n stories to fetch and display")
@@ -34,81 +37,61 @@ func init() {
 	}
 }
 
-func getIDs(n int) []int {
-	const topstoriesURL = "https://hacker-news.firebaseio.com/v0/topstories.json"
-	red := color.New(color.FgRed).Add(color.Bold)
-	allIds := make([]int, 500)
-	idList := make([]int, n)
-	resp, err := http.Get(topstoriesURL)
-	if err != nil {
-		red.Println(err)
-		os.Exit(1)
+func printStories(stories []Story) {
+	for i, story := range stories {
+		c := color.New(color.FgCyan).Add(color.Underline)
+		color.Cyan("%d.", i+1)
+		c.Printf("%s [%d points]", story.Title, story.Score)
+		//fmt.Printf("%d%s%d%s\n", i+1, ". "+story.Title+" [", story.Score, " points]")
+		fmt.Printf("\t%d%s\t%s\n", story.Descendants, " comments", story.URL)
 	}
+}
 
+func getIDsNew(n int, ch chan int) {
+	allIds := make([]int, 500)
+	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		red.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
-
 	r := bytes.NewReader([]byte(string(body)))
 	err = json.NewDecoder(r).Decode(&allIds)
 	if err != nil {
-		red.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
-
 	for i := 0; i < n; i++ {
-		idList[i] = allIds[i]
+		ch <- allIds[i]
+		wg.Add(1)
+		go getTopStoriesNew(ch)
+        wg.Wait()
 	}
-	return idList
+	close(ch)
 }
 
-func getTopStories(IDs []int) []Story {
+func getTopStoriesNew(ch <-chan int) {
 	var story Story
-	topStories := make([]Story, len(IDs))
-	red := color.New(color.FgRed).PrintfFunc()
-
-	for i := 0; i < len(IDs); i++ {
-		resp, err := http.Get("https://hacker-news.firebaseio.com/v0/item/" + strconv.Itoa(IDs[i]) + ".json")
-		if err != nil {
-			red("Could not fetch story... Continuing...")
-			continue
-		}
-		defer resp.Body.Close()
-
-		err = json.NewDecoder(resp.Body).Decode(&story)
-		if err != nil {
-			red("Could not decode data... Continuing...")
-			continue
-		}
-		topStories[i] = story
+	id := <-ch
+    defer wg.Done()
+	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/item/" + strconv.Itoa(id) + ".json")
+	if err != nil {
+		fmt.Println("Could not fetch story... Continuing...")
 	}
-	return topStories
-}
-
-func printStories(stories []Story) {
-	cyan := color.New(color.FgCyan).Add(color.Bold)
-	magenta := color.New(color.FgMagenta).Add(color.Bold)
-	yellow := color.New(color.FgYellow)
-	green := color.New(color.FgGreen).Add(color.Underline)
-	for i, story := range stories {
-		cyan.Printf("%d%s", i+1, ". ")
-		magenta.Printf("%s [%d %s]\n", story.Title, story.Score, "points")
-		yellow.Printf("  %d %s", story.Descendants, "comments")
-		green.Printf("\t%s\n", story.URL)
+	defer resp.Body.Close()
+	err = json.NewDecoder(resp.Body).Decode(&story)
+	if err != nil {
+		fmt.Println("Could not decode data... Continuing...")
 	}
+	fmt.Printf("%#v\n", story)
 }
 
 func main() {
-	fmt.Print("Starting timer...\n\n")
 	start := time.Now()
-
-	IDs := getIDs(flagvar)
-	stories := getTopStories(IDs)
-	printStories(stories)
-
-	t := time.Now().Sub(start).Round(time.Millisecond).Truncate(time.Millisecond).String()
-	fmt.Printf("\n%s%s\n", "Time elapsed (in seconds): ", t)
+	ch := make(chan int, flagvar)
+	getIDsNew(flagvar, ch)
+	t := time.Now()
+	fmt.Printf("\n%s %f%s\n", "Time elapsed: ", t.Sub(start).Seconds(), "s")
 }
