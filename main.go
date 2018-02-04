@@ -47,8 +47,10 @@ func printStories(stories []Story) {
 	}
 }
 
-func getIDsNew(n int, ch chan int) {
+func getIDsNew(n int, ch chan int) []Story {
+	wg.Add(n)
 	allIds := make([]int, 500)
+	stories := make([]Story, n)
 	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
 	if err != nil {
 		log.Fatal(err)
@@ -65,27 +67,31 @@ func getIDsNew(n int, ch chan int) {
 	}
 	for i := 0; i < n; i++ {
 		ch <- allIds[i]
-		wg.Add(1)
-		go getTopStoriesNew(ch)
-        wg.Wait()
+		go getTopStoriesNew(i, ch, stories)
 	}
+	wg.Wait()
 	close(ch)
+	return stories
 }
 
-func getTopStoriesNew(ch <-chan int) {
+func getTopStoriesNew(idx int, ch <-chan int, stories []Story) {
+	//now := time.Now()
 	var story Story
 	id := <-ch
-    defer wg.Done()
+	defer wg.Done()
 	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/item/" + strconv.Itoa(id) + ".json")
 	if err != nil {
 		fmt.Println("Could not fetch story... Continuing...")
 	}
-	defer resp.Body.Close()
 	err = json.NewDecoder(resp.Body).Decode(&story)
+	resp.Body.Close()
 	if err != nil {
 		fmt.Println("Could not decode data... Continuing...")
 	}
 	fmt.Printf("%#v\n", story)
+	stories[idx] = story
+	//end := time.Now()
+	//fmt.Printf("Loop %d took %f s\n", idx, end.Sub(now).Seconds())
 }
 
 func main() {
@@ -93,5 +99,5 @@ func main() {
 	ch := make(chan int, flagvar)
 	getIDsNew(flagvar, ch)
 	t := time.Now()
-	fmt.Printf("\n%s %f%s\n", "Time elapsed: ", t.Sub(start).Seconds(), "s")
+	fmt.Printf("\n%s%f%s\n", "Time elapsed: ", t.Sub(start).Seconds(), "s")
 }
