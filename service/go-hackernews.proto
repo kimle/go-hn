@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package gohackernews;
+
+service Test {
+    rpc GetStory (TopStories) returns (Story) {}
+    rpc GetStories (TopStories) returns (Stories) {}
+}
+
+message Story {
+    int32 id = 1;
+    string title = 2;
+    string url = 3;
+}
+
+message TopStories {
+    repeated Story topStories = 1;
+}
+
+message Stories {
+    repeated Story stories = 1;
+}

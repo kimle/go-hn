@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: go-hackernews
+  ports:
+  - protocol: TCP
+    port: 50051
+  type: LoadBalancer
