@@ -5,6 +5,7 @@ package gohackernews;
 service Test {
     rpc GetStory (TopStories) returns (Story) {}
     rpc GetStories (TopStories) returns (Stories) {}
+    rpc GetIds (Amount) returns (Ids) {}
 }
 
 message Story {
@@ -19,4 +20,12 @@ message TopStories {
 
 message Stories {
     repeated Story stories = 1;
+}
+
+message Amount {
+    int32 amount = 1;
+}
+
+message Ids {
+    repeated int32 ids = 1;
 }
