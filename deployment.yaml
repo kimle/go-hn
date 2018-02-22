@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: go-hackernews
-        image: gcr.io/go-hackernews/go-hackernews:latest
+        image: gcr.io/go-hackernews/go-hackernews:v2
         ports:
         - containerPort: 50051

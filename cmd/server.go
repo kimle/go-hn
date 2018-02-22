@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -18,6 +20,28 @@ const (
 )
 
 type server struct{}
+
+func (s *server) GetIds(ctx context.Context, in *pb.Amount) (*pb.Ids, error) {
+	allIds := make([]int32, 500)
+	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
+	if err != nil {
+		log.Fatalf("could not get ids: %v", err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	response := bytes.NewReader([]byte(string(body)))
+	err = json.NewDecoder(response).Decode(&allIds)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return &pb.Ids{Ids: allIds}, nil
+}
 
 func (s *server) GetStory(ctx context.Context, in *pb.TopStories) (*pb.Story, error) {
 	log.Printf("TopStories: %v\n", in)
