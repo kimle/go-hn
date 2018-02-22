@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	pb "github.com/kimle/go-hackernews/service"
 	"google.golang.org/grpc"
@@ -39,8 +40,10 @@ func main() {
 	}
 
 	defer conn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	c := pb.NewTestClient(conn)
-	r, err := c.GetIds(context.Background(), &pb.Amount{Amount: int32(flagvar)})
+	r, err := c.GetIds(ctx, &pb.Amount{Amount: int32(flagvar)})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,8 +51,8 @@ func main() {
 	for i := 0; i < flagvar; i++ {
 		stories[i] = &pb.Story{Id: r.Ids[i]}
 	}
-	rStories, err := c.GetStories(context.Background(), &pb.TopStories{TopStories: stories})
+	rStories, err := c.GetStories(ctx, &pb.TopStories{TopStories: stories})
 	for i, story := range rStories.Stories {
-		fmt.Printf("%d. %v\n", i, story)
+		fmt.Printf("\n%d. %v\n url: %v\n", i+1, story.Title, story.Url)
 	}
 }

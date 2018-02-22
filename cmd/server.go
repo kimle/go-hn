@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -22,6 +23,9 @@ const (
 type server struct{}
 
 func (s *server) GetIds(ctx context.Context, in *pb.Amount) (*pb.Ids, error) {
+	if in.Amount > 500 {
+		log.Fatalf("cannot get more than 500 stories")
+	}
 	allIds := make([]int32, 500)
 	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
 	if err != nil {
@@ -40,7 +44,7 @@ func (s *server) GetIds(ctx context.Context, in *pb.Amount) (*pb.Ids, error) {
 		log.Fatal(err)
 	}
 
-	return &pb.Ids{Ids: allIds}, nil
+	return &pb.Ids{Ids: allIds[:in.Amount]}, nil
 }
 
 func (s *server) GetStory(ctx context.Context, in *pb.TopStories) (*pb.Story, error) {
@@ -49,13 +53,14 @@ func (s *server) GetStory(ctx context.Context, in *pb.TopStories) (*pb.Story, er
 }
 
 func (s *server) GetStories(ctx context.Context, in *pb.TopStories) (*pb.Stories, error) {
-	stories := make([]*pb.Story, 10)
-	for i := 0; i < 10; i++ {
+	amount := len(in.TopStories)
+	fmt.Printf("amount: %v")
+	stories := make([]*pb.Story, amount)
+	for i := 0; i < amount; i++ {
 		resp, err := http.Get("https://hacker-news.firebaseio.com/v0/item/" +
 			strconv.FormatInt(int64(in.TopStories[i].GetId()), 10) + ".json")
 		if err != nil {
 			log.Fatal(err)
-			return nil, err
 		}
 		err = json.NewDecoder(resp.Body).Decode(&stories[i])
 		if err != nil {
@@ -64,6 +69,7 @@ func (s *server) GetStories(ctx context.Context, in *pb.TopStories) (*pb.Stories
 		log.Printf("story %d: %v", i, stories[i])
 		defer resp.Body.Close()
 	}
+	fmt.Printf("stories: %v", stories)
 	return &pb.Stories{stories}, nil
 }
 
