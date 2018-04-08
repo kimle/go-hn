@@ -16,7 +16,8 @@ import (
 )
 
 const (
-	port = ":50051"
+	port       = ":50051"
+	maxStories = 500
 )
 
 var wg sync.WaitGroup
@@ -24,10 +25,10 @@ var wg sync.WaitGroup
 type server struct{}
 
 func (s *server) GetIds(ctx context.Context, in *pb.Amount) (*pb.Ids, error) {
-	if in.Amount > 500 {
+	if in.Amount > maxStories {
 		log.Fatalf("cannot get more than 500 stories")
 	}
-	allIds := make([]int32, in.Amount)
+	allIds := make([]int32, maxStories)
 	resp, err := http.Get("https://hacker-news.firebaseio.com/v0/topstories.json")
 	if err != nil {
 		log.Fatalf("could not get ids: %v", err)
