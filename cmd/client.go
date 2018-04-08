@@ -18,16 +18,19 @@ var address string
 
 func init() {
 	flag.IntVar(&flagvar, "stories", 0, "n stories to fetch and display")
-	flag.StringVar(&env, "env", "dev", "enviroment to use")
+	flag.StringVar(&env, "env", "prod", "environment to use")
 	flag.Parse()
 	if flagvar == 0 {
 		fmt.Println("you must provide at least one story!")
 		os.Exit(0)
 	}
 
-	if env == "dev" {
+	switch env {
+	case "dev":
 		address = "localhost:50051"
-	} else if env == "prod" {
+	case "minikube":
+		address = "192.168.99.100:50051"
+	case "prod":
 		address = "35.229.113.24:50051"
 	}
 }

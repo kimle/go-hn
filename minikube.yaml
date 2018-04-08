@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gohackernews-deployment
+  labels:
+    app: go-hackernews
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: go-hackernews
+  template:
+    metadata:
+      labels:
+        app: go-hackernews
+    spec:
+      containers:
+      - name: go-hackernews
+        image: go-hackernews:v9
+        ports:
+        - containerPort: 50051
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: go-hackernews
+  ports:
+  - protocol: TCP
+    port: 50051
+  type: NodePort
