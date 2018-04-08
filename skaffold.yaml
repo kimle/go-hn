@@ -1,0 +1,13 @@
+apiVersion: skaffold/v1
+kind: Config
+build:
+  artifacts:
+  - imagename: go-hackernews
+    workspace: .
+  local: {}
+deploy:
+  kubectl:
+    -paths:
+    - ./minikube.yaml
+    parameters:
+      IMAGE_NAME: go-hackernews
